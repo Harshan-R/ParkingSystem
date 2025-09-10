@@ -1,6 +1,8 @@
 package com.example.kafka;
 
 import org.apache.kafka.clients.consumer.*;
+
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
 
@@ -16,11 +18,20 @@ public class KafkaConsumerService {
         KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props);
         consumer.subscribe(Collections.singletonList("parking-events"));
 
-        while (true) {
-            ConsumerRecords<String, String> records = consumer.poll(1000);
-            for (ConsumerRecord<String, String> record : records) {
-                System.out.println("Received Kafka event: " + record.value());
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("Shutting down Kafka consumer...");
+            consumer.close();
+        }));
+
+        try {
+            while (true) {
+                ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(1000));
+                for (ConsumerRecord<String, String> record : records) {
+                    System.out.println("📥 Received Kafka event: " + record.value());
+                }
             }
+        } catch (Exception e) {
+            System.err.println("Kafka consumer error: " + e.getMessage());
         }
     }
 }

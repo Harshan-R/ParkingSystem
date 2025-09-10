@@ -62,6 +62,75 @@ public class CustomerService {
         return false;
     }
 
+    public boolean registerNewCustomer(Customer customer) {
+    return customerDAO.addCustomer(customer);
+}
+    public List<Vehicle> getVehiclesByCustomer(int customerId) {
+        return vehicleDAO.getAllVehicles().stream()
+                .filter(v -> v.getCustomerId() == customerId)
+                .collect(Collectors.toList());
+    }
+
+    public Vehicle getVehicleByPlate(String numberPlate) {
+        return vehicleDAO.getAllVehicles().stream()
+                .filter(v -> v.getNumberPlate().equalsIgnoreCase(numberPlate))
+                .findFirst().orElse(null);
+    }
+
+    public ParkingSession getActiveSessionByVehicle(int vehicleId) {
+        return sessionDAO.getAllSessions().stream()
+                .filter(s -> s.getVehicleId() == vehicleId && s.getExitTime() == null)
+                .findFirst().orElse(null);
+    }
+
+    public double calculateCharges(Timestamp entryTime, String vehicleType) {
+        long durationHours = java.time.Duration.between(entryTime.toInstant(), 
+                                new Timestamp(System.currentTimeMillis()).toInstant()).toHours();
+
+        double rate;
+        switch (vehicleType.toUpperCase()) {
+            case "TWO_WHEELER": rate = 10.0; break;
+            case "FOUR_WHEELER": rate = 30.0; break;
+            case "SIX_WHEELER": rate = 50.0; break;
+            default: rate = 20.0; // fallback rate
+        }
+
+        double baseCharge = durationHours * rate;
+
+        // Apply 5% penalty if overdue (more than 1 hour)
+        if (durationHours > 1) {
+            double penalty = baseCharge * 0.05;
+            return baseCharge + penalty;
+        }
+
+        return baseCharge;
+    }
+
+
+
+    public boolean hasOverdueSessions(int customerId) {
+        List<ParkingSession> sessions = sessionDAO.getAllSessions();
+        List<Vehicle> vehicles = vehicleDAO.getAllVehicles();
+
+        long now = System.currentTimeMillis();
+
+        for (ParkingSession session : sessions) {
+            if (session.getExitTime() == null) {
+                Vehicle v = vehicles.stream()
+                    .filter(veh -> veh.getId() == session.getVehicleId() && veh.getCustomerId() == customerId)
+                    .findFirst().orElse(null);
+
+                if (v != null) {
+                    long entry = session.getEntryTime().getTime();
+                    if ((now - entry) > 3600000) { // 1 hour in milliseconds
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     private int getCustomerIdBySession(int sessionId) {
         List<ParkingSession> sessions = sessionDAO.getAllSessions();
         for (ParkingSession s : sessions) {
@@ -73,5 +142,11 @@ public class CustomerService {
             }
         }
         return -1;
+    }
+
+    // ✅ New method: Balance check before parking
+    public boolean hasSufficientBalance(int customerId, double requiredAmount) {
+        Customer customer = customerDAO.getCustomerById(customerId);
+        return customer != null && customer.getBalance() >= requiredAmount;
     }
 }

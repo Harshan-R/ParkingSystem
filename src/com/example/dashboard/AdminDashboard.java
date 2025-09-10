@@ -50,7 +50,7 @@ public class AdminDashboard {
                     break;
                 case 5:
                     List<Payment> payments = adminService.viewAllPayments();
-                    payments.forEach(p -> System.out.println("Payment ID: " + p.getId() + ", Amount: " + p.getAmount()));
+                    payments.forEach(p -> System.out.println("Payment ID: " + p.getId() + ", Amount: ₹" + p.getAmount()));
                     break;
                 case 6:
                     List<TopUpRequest> requests = adminService.viewAllTopUpRequests();

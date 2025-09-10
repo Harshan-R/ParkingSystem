@@ -46,4 +46,26 @@ public class VehicleDAO {
             return false;
         }
     }
+
+    public Vehicle getVehicleByNumberPlate(String plate) {
+        String sql = "SELECT * FROM Vehicles WHERE number_plate = ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, plate);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                return new Vehicle(
+                    rs.getInt("id"),
+                    rs.getInt("customer_id"),
+                    rs.getString("vehicle_type"),
+                    rs.getString("number_plate")
+                );
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }
